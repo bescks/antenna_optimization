@@ -3,9 +3,10 @@ import subprocess
 import socket
 import threading
 import time
+from plot import update_plot
 from logger import logger, data_logger
 
-conn_flag = True
+exit = False
 
 
 def socket_handler(ip):
@@ -21,8 +22,13 @@ def socket_handler(ip):
     sk.listen(5)
     logger.info(socket_logger_head + "server socket has been created")
     conn, address = sk.accept()
-    while conn_flag:
+    while not exit:
         client_data = conn.recv(1024).decode()
+        try:
+            update_plot(ip, int(client_data.split(',')[-1]))
+        except Exception as e:
+            logger.error(str(e) + ': ' + client_data)
+
         data_logger.info(client_data)
         # conn.sendall('sever have received your message'.encode())  # send feedback to client
     conn.close()

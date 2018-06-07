@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # incoming args:  $1: antenna ip, $2: server ip,  $3: port, $4: run_antennas,
 # $6: antenna id, $7: msg
-ssh root@$1 "test -e /home/pi/optimization_antenna"
+ssh pi@$1 "test -e /home/pi/optimization_antenna"
 if [ $? -eq 0 ]; then
     # if file exists
     ssh root@$1 "rm -rf /home/pi/optimization_antenna/*"

@@ -1,73 +1,46 @@
-# !/usr/bin/env python
-
 import numpy as np
-import time
-import matplotlib
+import bokeh.sampledata
 
-matplotlib.use('TKAgg')
-# matplotlib.use('GTKAgg')
-from matplotlib import pyplot as plt
-
-
-def randomwalk(dims=(256, 256), n=20, sigma=5, alpha=0.95, seed=1):
-    """ A simple random walk with memory """
-
-    r, c = dims
-    gen = np.random.RandomState(seed)
-    pos = gen.rand(2, n) * ((r,), (c,))
-    old_delta = gen.randn(2, n) * sigma
-
-    while True:
-        delta = (1. - alpha) * gen.randn(2, n) * sigma + alpha * old_delta
-        pos += delta
-        for ii in range(n):
-            if not (0. <= pos[0, ii] < r):
-                pos[0, ii] = abs(pos[0, ii] % r)
-            if not (0. <= pos[1, ii] < c):
-                pos[1, ii] = abs(pos[1, ii] % c)
-        old_delta = delta
-        yield pos
+from bokeh.layouts import gridplot
+from bokeh.plotting import figure, show, output_file
+from bokeh.sampledata.stocks import AAPL, GOOG, IBM, MSFT
 
 
-def run(niter=10000):
-    """
-    Display the simulation using matplotlib, using blit() for speed
-    """
-
-    fig, ax = plt.subplots(1, 1)
-    ax.set_aspect('equal')
-    ax.set_xlim(0, 255)
-    ax.set_ylim(0, 255)
-    ax.hold(True)
-    rw = randomwalk()
-    x, y = next(rw)
-
-    plt.show(False)
-    plt.draw()
-
-    # cache the background
-    background = fig.canvas.copy_from_bbox(ax.bbox)
-
-    points = ax.plot(x, y, 'o')[0]
-    tic = time.time()
-
-    for ii in range(niter):
-        # update the xy data
-        x, y = next(rw)
-        points.set_data(x, y)
-
-        # restore background
-        fig.canvas.restore_region(background)
-
-        # redraw just the points
-        ax.draw_artist(points)
-
-        # fill in the axes rectangle
-        fig.canvas.blit(ax.bbox)
-
-    plt.close(fig)
-    print("Average FPS: {:.2f}".format(niter / (time.time() - tic)))
+def datetime(x):
+    return np.array(x, dtype=np.datetime64)
 
 
-if __name__ == '__main__':
-    run()
+p1 = figure(x_axis_type="datetime", title="Stock Closing Prices")
+p1.grid.grid_line_alpha = 0.3
+p1.xaxis.axis_label = 'Date'
+p1.yaxis.axis_label = 'Price'
+
+p1.line(datetime(AAPL['date']), AAPL['adj_close'], color='#A6CEE3', legend='AAPL')
+p1.line(datetime(GOOG['date']), GOOG['adj_close'], color='#B2DF8A', legend='GOOG')
+p1.line(datetime(IBM['date']), IBM['adj_close'], color='#33A02C', legend='IBM')
+p1.line(datetime(MSFT['date']), MSFT['adj_close'], color='#FB9A99', legend='MSFT')
+p1.legend.location = "top_left"
+
+aapl = np.array(AAPL['adj_close'])
+aapl_dates = np.array(AAPL['date'], dtype=np.datetime64)
+
+window_size = 30
+window = np.ones(window_size) / float(window_size)
+aapl_avg = np.convolve(aapl, window, 'same')
+
+p2 = figure(x_axis_type="datetime", title="AAPL One-Month Average")
+p2.grid.grid_line_alpha = 0
+p2.xaxis.axis_label = 'Date'
+p2.yaxis.axis_label = 'Price'
+p2.ygrid.band_fill_color = "olive"
+p2.ygrid.band_fill_alpha = 0.1
+
+p2.circle(aapl_dates, aapl, size=4, legend='close',
+          color='darkgrey', alpha=0.2)
+
+p2.line(aapl_dates, aapl_avg, legend='avg', color='navy')
+p2.legend.location = "top_left"
+
+output_file("stocks.html", title="stocks.py example")
+
+show(gridplot([[p1, p2]], plot_width=400, plot_height=400))  # open a browser

@@ -1,7 +1,5 @@
 import logging
-import time
-
-logging.basicConfig(format=('[%(name)s - %(levelname)s - %(asctime)s] %(message)s'))
+import conf
 
 # main logger
 logger = logging.getLogger("Main")
@@ -15,17 +13,12 @@ logger.addHandler(fh)
 
 # data_logger
 data_logger = logging.getLogger("Data")
+data_logger.propagate = conf.SHOW_MSG
 data_logger.setLevel(logging.DEBUG)
+
 # add file handler
 data_fh = logging.FileHandler('data.csv', mode='w')
 data_fh.setLevel(logging.DEBUG)
 data_formatter = logging.Formatter('%(message)s')
 data_fh.setFormatter(data_formatter)
 data_logger.addHandler(data_fh)
-
-# i = 0
-# while True:
-#     time.sleep(1)
-#     logger.info(i)
-#     data_logger.info("2 " + str(i))
-#     i += 1

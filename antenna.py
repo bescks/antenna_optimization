@@ -25,7 +25,7 @@ data_num = 1
 
 def callback(addr, rssi, packet, additional_info):
     global data_num
-    msg = "%s,%s,%s,%s,%s" % (datetime.now(), my_antenna['ID'], data_num, addr, rssi)
+    msg = "%s,%s,%s,%s,%d" % (datetime.now(), my_antenna['ID'], data_num, addr, rssi)
     data_num += 1
     logger.info(msg)
     s.sendall(msg.encode())
