@@ -4,12 +4,12 @@ import socket
 import threading
 import time
 from plot import update_plot
-from logger import logger, data_logger
+from logger import logger, rawData_logger
 
 exit = False
 
 
-def socket_handler(ip):
+def socket_handler(id, ip):
     """
     this function is only invoked by thread and responsible for managing communication  between server and antenna
     :param ip: antenna's ip
@@ -25,31 +25,30 @@ def socket_handler(ip):
     while not exit:
         client_data = conn.recv(1024).decode()
         try:
-            update_plot(ip, int(client_data.split(',')[-1]))
+            update_plot(client_data)
         except Exception as e:
             logger.error(str(e) + ': ' + client_data)
 
-        data_logger.info(client_data)
         # conn.sendall('sever have received your message'.encode())  # send feedback to client
     conn.close()
     logger.info(socket_logger_head + "antenna socket is closed")
 
 
-ports = {}
+ports = {}  # key: ip, value: port
 logger.info("start to set each antenna...")
-for ip, prop in conf.ANTENNAS.items():
-    data_logger.info("timestamp,antennaID,dataNum,beaconMac,beaconUUID,beaconRSSI")
-    threading.Thread(target=socket_handler, args=(ip,)).start()
-    while ip not in ports:
+for id, prop in conf.ANTENNAS.items():
+    rawData_logger.info("timestamp,antennaID,dataNum,beaconMac,beaconUUID,beaconRSSI")
+    threading.Thread(target=socket_handler, args=(id, prop['IP'])).start()
+    while prop['IP'] not in ports:
         time.sleep(0.1)
-    logger_head = "[antenna " + ip + ":" + str(ports[ip]) + "] "
+    logger_head = "[antenna " + prop['IP'] + ":" + str(ports[prop['IP']]) + "] "
     if conf.RUN_ANTENNAS:
         #  args:  $1: antenna ip, $2: server ip,  $3: port, $4: run_antennas
-        subprocess.Popen(["sh", "antenna.sh", ip, conf.SERVER, str(ports[ip]), "1"])
+        subprocess.Popen(["sh", "antenna.sh", prop["IP"], conf.SERVER, str(ports[prop["IP"]]), "1"])
         logger.info(logger_head + "file transfer completed")
         logger.info(logger_head + "antenna socket is started")
     else:
-        subprocess.Popen(["sh", "antenna.sh", ip, conf.SERVER, str(ports[ip]), "0"])
+        subprocess.Popen(["sh", "antenna.sh", prop['IP'], conf.SERVER, str(ports[id]), "0"])
         logger.info(logger_head + "antenna socket isn't started")
 
 logger.info("antennas setting are finished")

@@ -1,55 +1,37 @@
 from functools import partial
-import random
 from threading import Thread
 import time
-import pandas
-from bokeh.models import ColumnDataSource
 from bokeh.plotting import curdoc, figure
 from tornado import gen
 import conf
+import numpy as np
 from bokeh.palettes import Category10
-from bokeh.io import output_file, show
-from bokeh.layouts import widgetbox, row, column
-from bokeh.models.widgets import Button, TextInput
-from bokeh.models import ColumnDataSource, Range1d, LabelSet, Label
+from bokeh.layouts import row, column
+from bokeh.models.widgets import Button, Div
+from bokeh.models import ColumnDataSource, Label
 from bokeh.models import HoverTool
-import sys
-from logger import data_logger
+from logger import rawData_logger, data_logger
+import multiprocessing as mp
 
 # this must only be modified from a Bokeh session callback
 # source are used to keep all data
 
-sources = {}
+sources = {}  # {beaconsID:{antennaID: source}}
 colors = {"all": Category10[10]}
 i = 0
-for ip in conf.ANTENNAS:
-    sources[ip] = ColumnDataSource(data=dict(x=[0], y=[conf.MEASURED_DISTANCE]))
-    colors[ip] = colors["all"][i]
-    i += 1
+for antenna_id in conf.ANTENNAS:
+    sources[antenna_id] = {}
+    colors[antenna_id] = {}
+    for beacon_id in conf.BEACONS:
+        sources[antenna_id][beacon_id] = ColumnDataSource(
+            data=dict(x=[], y=[]))  # x, y indicate the first set of data
+        colors[antenna_id][beacon_id] = colors["all"][i]
+        i += 1
 
 # Save curdoc() to make sure all threads see the same document
 doc = curdoc()
 
-# update coordinate x regularly
-x = 0
-
-
-def x_update():
-    global x
-    while True:
-        time.sleep(conf.BEACON_FREQUENCY)
-        x += 1
-
-
-Thread(target=x_update).start()
-
-
-@gen.coroutine
-def update(ip, rssi):
-    global sources, x
-    sources[ip].stream(dict(x=[x], y=[rssi]))
-
-
+# add figure
 hover = HoverTool(
     tooltips=[
         ('x', '@x'),
@@ -58,117 +40,119 @@ hover = HoverTool(
         ("screen(x,y)", "($sx, $sy)"),
         ("index", "$index"),
     ],
-    # display a tooltip whenever the cursor is vertically in line with a glyph
-    mode='vline'
+    mode='vline'  # display a tooltip whenever the cursor is vertically in line with a glyph
 )
 tools = "pan,wheel_zoom,box_zoom,reset,crosshair,zoom_in,zoom_out"
-plot_line = figure(width=1260, height=600, title="Realtime RSSI", x_axis_label='Time Sequence', y_axis_label='RSSI',
-                   tools=[hover, tools])
-
-for ip, prop in conf.ANTENNAS.items():
-    plot_line.line(x='x', y='y', source=sources[ip], legend=prop["ID"], line_color=colors[ip], line_width=2)
-    plot_line.circle(x='x', y='y', source=sources[ip], legend=prop["ID"], fill_color="white", size=3)
+plot_line = figure(
+    width=1260,
+    height=600,
+    title="Realtime RSSI",
+    x_axis_label='Time Sequence',
+    y_axis_label='RSSI',
+    tools=[
+        hover,
+        tools])
+for antenna_id in conf.ANTENNAS:
+    for beacon_id in conf.BEACONS:
+        plot_line.line(
+            x='x',
+            y='y',
+            source=sources[antenna_id][beacon_id],
+            legend="Antenna %s,Beacon %s" % (antenna_id, beacon_id),
+            line_color=colors[antenna_id][beacon_id],
+            line_width=1.5)
+        plot_line.circle(
+            x='x',
+            y='y',
+            source=sources[antenna_id][beacon_id],
+            legend="Antenna %s,Beacon %s" % (antenna_id, beacon_id),
+            fill_color="white",
+            size=2.5)
 
 plot_line.legend.location = "top_left"
 plot_line.legend.click_policy = "hide"
 doc.add_root(plot_line)
 
+# update x-coordinate regularly
+x = 0
 
-def update_plot(ip, rssi):
-    doc.add_next_tick_callback(partial(update, ip=ip, rssi=rssi))
+
+def x_update():
+    global x
+    while True:
+        time.sleep(conf.BEACON_FREQUENCY)
+        x += conf.BEACON_FREQUENCY
 
 
-###########################################################################
-# add a button and label
+Thread(target=x_update).start()
 
+# add labels
+label1 = Label(x=0, y=0, x_units='screen', y_units='screen',
+               text='saved: 0/0', render_mode='css',
+               background_fill_alpha=0)
+label2 = Label(x=0, y=20, x_units='screen', y_units='screen',
+               text='max=0, min=0, avg=0', render_mode='css',
+               background_fill_alpha=0)
+plot_line.add_layout(label1)
+plot_line.add_layout(label2)
+
+# add a button
 label_num = 0
-text_input = TextInput(value="label")
-button = Button(label="Add label", button_type="success")
+button = Button(label="Save Data", button_type="success")
+
+saving = False
+saving_num = 0
+saving_start = 0
+statistics = {'min': 999, 'max': -999, 'sum': 0, 'data': [], 'median': 0, 'start': 0, 'end': 0}
 
 
 def save_data():
-    global label_num
-    label_num += 1
-    label = text_input.value
-    data_logger.warning("Label " + str(label_num) + ": " + label)
+    global saving
+    button.disabled = True
+    saving = True
+    statistics['start'] = 'n'
+    label1.text = "saved: 0/%s" % (conf.SAVED_DATA_NUMBER)
+    rawData_logger.info("start saving")
     data_logger.info("timestamp,antennaID,dataNum,beaconMac,beaconUUID,beaconRSSI")
 
 
-button.on_click(save_data)
-curdoc().add_root(widgetbox(children=[text_input, button], width=150))
+# stream new data
+@gen.coroutine
+def update(client_data):
+    global sources, x, saving, saving_num, statistics
+    rawData_logger.info(client_data)
+    client_data_list = client_data.split(',')
+    antenna_id = int(client_data_list[2])
+    beacon_id = int(client_data_list[3])
+    rssi = int(client_data_list[-1])
+    sources[antenna_id][beacon_id].stream(dict(x=[x], y=[rssi]))
+    if saving:
+        data_logger.info(client_data)
+        saving_num += 1
+        label1.text = "saved: %s/%s" % (saving_num, conf.SAVED_DATA_NUMBER)
+        statistics['data'].append(rssi)
+        if rssi < statistics['min']:
+            statistics['min'] = rssi
+        elif rssi > statistics['max']:
+            statistics['max'] = rssi
+        statistics['sum'] = statistics['sum'] + rssi
+        label2.text = "min=%s, max=%s, avg=%.3f" % (
+            statistics['min'], statistics['max'], statistics['sum'] / saving_num)
 
-###########################################################################
-# add a boxplot
-# for source in sources:
-#     source.to_df()
-# import numpy as np
-# import pandas as pd
-#
-# from bokeh.plotting import figure, show, output_file
-#
-# # generate some synthetic time series for six different categories
-# cats = list("abcdef")
-# yy = np.random.randn(2000)
-# g = np.random.choice(cats, 2000)
-# for i, l in enumerate(cats):
-#     yy[g == l] += i // 2
-# df = pd.DataFrame(dict(score=yy, group=g))
-#
-# # find the quartiles and IQR for each category
-# groups = df.groupby('group')
-# q1 = groups.quantile(q=0.25)
-# q2 = groups.quantile(q=0.5)
-# q3 = groups.quantile(q=0.75)
-# iqr = q3 - q1
-# upper = q3 + 1.5 * iqr
-# lower = q1 - 1.5 * iqr
-#
-#
-# # find the outliers for each category
-# def outliers(group):
-#     cat = group.name
-#     return group[(group.score > upper.loc[cat]['score']) | (group.score < lower.loc[cat]['score'])]['score']
-#
-#
-# out = groups.apply(outliers).dropna()
-#
-# # prepare outlier data for plotting, we need coordinates for every outlier.
-# if not out.empty:
-#     outx = []
-#     outy = []
-#     for cat in cats:
-#         # only add outliers if they exist
-#         if not out.loc[cat].empty:
-#             for value in out[cat]:
-#                 outx.append(cat)
-#                 outy.append(value)
-#
-# p = figure(tools="save", background_fill_color="#EFE8E2", title="", x_range=cats)
-#
-# # if no outliers, shrink lengths of stems to be no longer than the minimums or maximums
-# qmin = groups.quantile(q=0.00)
-# qmax = groups.quantile(q=1.00)
-# upper.score = [min([x, y]) for (x, y) in zip(list(qmax.loc[:, 'score']), upper.score)]
-# lower.score = [max([x, y]) for (x, y) in zip(list(qmin.loc[:, 'score']), lower.score)]
-#
-# # stems
-# p.segment(cats, upper.score, cats, q3.score, line_color="black")
-# p.segment(cats, lower.score, cats, q1.score, line_color="black")
-#
-# # boxes
-# p.vbar(cats, 0.7, q2.score, q3.score, fill_color="#E08E79", line_color="black")
-# p.vbar(cats, 0.7, q1.score, q2.score, fill_color="#3B8686", line_color="black")
-#
-# # whiskers (almost-0 height rects simpler than segments)
-# p.rect(cats, lower.score, 0.2, 0.01, line_color="black")
-# p.rect(cats, upper.score, 0.2, 0.01, line_color="black")
-#
-# # outliers
-# if not out.empty:
-#     p.circle(outx, outy, size=6, color="#F38630", fill_alpha=0.6)
-#
-# p.xgrid.grid_line_color = None
-# p.ygrid.grid_line_color = "white"
-# p.grid.grid_line_width = 2
-# p.xaxis.major_label_text_font_size = "12pt"
-# doc.add_root(p)
+        if saving_num == conf.SAVED_DATA_NUMBER:
+            saving = False
+            label1.text = label1.text + " finished! " + str(len(statistics['data'])) + "data in total!"
+            label2.text = label2.text + ", median=" + str(np.median(statistics['data']))
+            rawData_logger.info("end saving")
+
+        # update plot
+
+
+def update_plot(client_data):
+    doc.add_next_tick_callback(partial(update, client_data=client_data))
+
+
+if len(conf.BEACONS) > 1:
+    button.disabled = True
+button.on_click(save_data)
+curdoc().add_root(column([row([button])], width=150))
