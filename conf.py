@@ -41,4 +41,4 @@ SHOW_MSG = False
 RUN_ANTENNAS = True
 
 # number of saved data
-SAVED_DATA_NUMBER = 500
+SAVED_DATA_NUMBER = 50

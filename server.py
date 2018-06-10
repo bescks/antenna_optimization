@@ -4,7 +4,7 @@ import socket
 import threading
 import time
 from plot import update_plot
-from logger import logger, rawData_logger
+from logger import logger
 
 exit = False
 
@@ -37,7 +37,7 @@ def socket_handler(id, ip):
 ports = {}  # key: ip, value: port
 logger.info("start to set each antenna...")
 for id, prop in conf.ANTENNAS.items():
-    rawData_logger.info("timestamp,antennaID,dataNum,beaconMac,beaconUUID,beaconRSSI")
+
     threading.Thread(target=socket_handler, args=(id, prop['IP'])).start()
     while prop['IP'] not in ports:
         time.sleep(0.1)
@@ -52,3 +52,4 @@ for id, prop in conf.ANTENNAS.items():
         logger.info(logger_head + "antenna socket isn't started")
 
 logger.info("antennas setting are finished")
+

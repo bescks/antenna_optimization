@@ -10,7 +10,7 @@ from bokeh.layouts import row, column
 from bokeh.models.widgets import Button, Div
 from bokeh.models import ColumnDataSource, Label
 from bokeh.models import HoverTool
-from logger import rawData_logger, data_logger
+from file_writer import write_data, write_raw_data
 import multiprocessing as mp
 
 # this must only be modified from a Bokeh session callback
@@ -103,6 +103,7 @@ button = Button(label="Save Data", button_type="success")
 saving = False
 saving_num = 0
 saving_start = 0
+saving_end = 0
 statistics = {'min': 999, 'max': -999, 'sum': 0, 'data': [], 'median': 0, 'start': 0, 'end': 0}
 
 
@@ -112,22 +113,42 @@ def save_data():
     saving = True
     statistics['start'] = 'n'
     label1.text = "saved: 0/%s" % (conf.SAVED_DATA_NUMBER)
-    rawData_logger.info("start saving")
-    data_logger.info("timestamp,antennaID,dataNum,beaconMac,beaconUUID,beaconRSSI")
+    write_raw_data("start saving")
+
+
+def show_statistics():
+    y = np.array(statistics['data'], dtype=np.int8)
+
+    unique_elements, counts_elements = np.unique(y, return_counts=True)
+    dis = list(zip(unique_elements.tolist(), counts_elements.tolist()))
+    hover = HoverTool(
+        tooltips=[
+            ('rssi', '@x'),
+            ('count', '@top'),  # use @{ } for field names with spaces
+        ],
+        # display a tooltip whenever the cursor is vertically in line with a glyph
+        mode='vline'
+    )
+    plot_bar = figure(width=1000, plot_height=300, tools=[hover, tools])
+    plot_bar.vbar(x=unique_elements, top=counts_elements, width=1, alpha=0.5)
+    plot_bar.y_range.start = 0
+    plot_bar.x_range.range_padding = 0.1
+    plot_bar.xgrid.grid_line_color = None
+    doc.add_root(plot_bar)
 
 
 # stream new data
 @gen.coroutine
 def update(client_data):
     global sources, x, saving, saving_num, statistics
-    rawData_logger.info(client_data)
+    write_raw_data(client_data)
     client_data_list = client_data.split(',')
     antenna_id = int(client_data_list[2])
     beacon_id = int(client_data_list[3])
     rssi = int(client_data_list[-1])
     sources[antenna_id][beacon_id].stream(dict(x=[x], y=[rssi]))
     if saving:
-        data_logger.info(client_data)
+        write_data(client_data)
         saving_num += 1
         label1.text = "saved: %s/%s" % (saving_num, conf.SAVED_DATA_NUMBER)
         statistics['data'].append(rssi)
@@ -141,9 +162,10 @@ def update(client_data):
 
         if saving_num == conf.SAVED_DATA_NUMBER:
             saving = False
-            label1.text = label1.text + " finished! " + str(len(statistics['data'])) + "data in total!"
+            label1.text = label1.text + " finished! " + str(len(statistics['data']))
             label2.text = label2.text + ", median=" + str(np.median(statistics['data']))
-            rawData_logger.info("end saving")
+            write_raw_data("end saving")
+            show_statistics()
 
         # update plot
 
