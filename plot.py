@@ -11,6 +11,7 @@ from bokeh.palettes import Category10
 from bokeh.io import output_file, show
 from bokeh.layouts import widgetbox, row, column
 from bokeh.models.widgets import Button, TextInput
+from bokeh.models import ColumnDataSource, Range1d, LabelSet, Label
 from bokeh.models import HoverTool
 import sys
 from logger import data_logger
@@ -90,11 +91,12 @@ def save_data():
     label_num += 1
     label = text_input.value
     data_logger.warning("Label " + str(label_num) + ": " + label)
+    data_logger.info("timestamp,antennaID,dataNum,beaconMac,beaconUUID,beaconRSSI")
 
 
 button.on_click(save_data)
-
 curdoc().add_root(widgetbox(children=[text_input, button], width=150))
+
 ###########################################################################
 # add a boxplot
 # for source in sources:

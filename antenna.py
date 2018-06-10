@@ -25,7 +25,7 @@ data_num = 1
 
 def callback(addr, rssi, packet, additional_info):
     global data_num
-    msg = "%s,%s,%s,%s,%d" % (datetime.now(), my_antenna['ID'], data_num, addr, rssi)
+    msg = "%s,%s,%s,%s,%s,%d" % (datetime.now(), my_antenna['ID'], data_num, addr, packet.uuid, rssi)
     data_num += 1
     logger.info(msg)
     s.sendall(msg.encode())
@@ -34,7 +34,15 @@ def callback(addr, rssi, packet, additional_info):
     # print(server_reply)
 
 
-scanner = BeaconScanner(callback)
+scanner = None
+if conf.SCAN_ALL_TAGS:
+    scanner = BeaconScanner(callback)
+else:
+    device_filter = []
+    for uuid in conf.TAGS:
+        device_filter.append(IBeaconFilter(uuid))
+    scanner = BeaconScanner(callback, device_filter=device_filter)
+
 scanner.start()
 while True:
     time.sleep(10)

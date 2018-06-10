@@ -17,7 +17,7 @@ data_logger.propagate = conf.SHOW_MSG
 data_logger.setLevel(logging.DEBUG)
 
 # add file handler
-data_fh = logging.FileHandler('data.csv', mode='w')
+data_fh = logging.FileHandler('rawdata.csv', mode='w')
 data_fh.setLevel(logging.DEBUG)
 data_formatter = logging.Formatter('%(message)s')
 data_fh.setFormatter(data_formatter)

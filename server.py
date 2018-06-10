@@ -38,6 +38,7 @@ def socket_handler(ip):
 ports = {}
 logger.info("start to set each antenna...")
 for ip, prop in conf.ANTENNAS.items():
+    data_logger.info("timestamp,antennaID,dataNum,beaconMac,beaconUUID,beaconRSSI")
     threading.Thread(target=socket_handler, args=(ip,)).start()
     while ip not in ports:
         time.sleep(0.1)
