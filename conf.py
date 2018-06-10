@@ -1,9 +1,10 @@
 # csv name format: pt-b1-b2-a1-a2-1m-square-1
-FILE_PATH = "data"
-FILE_HEAD = "pt"
-FILE_PLACE = "square"
-FILE_DISTANCE = "1m"
-FILE_GROUP = "1"
+FILE_NAME = {
+    "path": "data/",
+    "category": "pt",
+    "place": "home",
+    "distance": "1m",
+    "set": "1"}
 
 # available antennas
 ANTENNAS = {
@@ -24,7 +25,7 @@ TAGS = {
 }
 
 # server IP
-SERVER = '192.168.1.100'  # home
+SERVER = '192.168.1.100'  # Huawei-WIFI
 # SERVER = '192.168.171.104' # ATG-Group
 
 # beacon frequency, unit: second
