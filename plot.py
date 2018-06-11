@@ -2,6 +2,7 @@ from functools import partial
 from threading import Thread
 import time
 from bokeh.plotting import curdoc, figure
+import os
 from tornado import gen
 import conf
 import numpy as np
@@ -166,6 +167,7 @@ def update(client_data):
             label2.text = label2.text + ", median=" + str(np.median(statistics['data']))
             write_raw_data("end saving")
             show_statistics()
+            os.system('say "completed"')
 
         # update plot
 

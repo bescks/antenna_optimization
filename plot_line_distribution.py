@@ -15,21 +15,24 @@ from bokeh.layouts import gridplot
 from bokeh.plotting import figure, show, output_file
 
 TOOLS = "pan,wheel_zoom,box_zoom,reset,save,box_select"
-path_head = "/Users/gengdongjie/WorkSpace/Bitbucket/optimization_antenna/data3/"
-path = "beacon - black/position 1/"
+path_head = "/Users/gengdongjie/WorkSpace/Bitbucket/optimization_antenna/"
+path = "data4/"
 
-output_file("visualization.html")
 files = [f for f in listdir(path_head + path) if isfile(join(path_head + path, f))]
-
+# output_file(path_head + path + "visualization.html")
 figures = []
+files.sort()
 for file in files:
+    if file.startswith("rawData"):
+        continue
+    output_file(path_head + path + "plot/" + file[:-4] + ".html")
     with open(path_head + path + file) as f:
         reader = csv.reader(f)
         # next(reader) 返回文件下一行，并按照分隔符生成一个list， 第一次调用时读取第一行
         header_row = next(reader)
         rssi = []
         for row in reader:
-            rssi.append(row[5])
+            rssi.append(row[-1])
     y1 = np.array(rssi, dtype=np.int8)
     x = np.arange(1, 501, 1)
 
@@ -69,4 +72,4 @@ for file in files:
     p2.xgrid.grid_line_color = None
     figures.append(p2)
 
-show(column(figures))  # open a browser
+    show(column(figures))  # open a browser
