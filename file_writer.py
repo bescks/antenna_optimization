@@ -21,5 +21,5 @@ def write_data(msg):
         writer.write(msg + '\n')
 
 
-write_raw_data("timestamp,antennaID,dataNum,beaconMac,beaconUUID,beaconRSSI")
-write_data("timestamp,antennaID,dataNum,beaconMac,beaconUUID,beaconRSSI")
+write_raw_data("timestamp,dataNum,antennaID,beaconMac,beaconUUID,beaconRSSI")
+write_data("timestamp,dataNum,antennaID,beaconMac,beaconUUID,beaconRSSI")

@@ -115,6 +115,7 @@ def save_data():
     statistics['start'] = 'n'
     label1.text = "saved: 0/%s" % (conf.SAVED_DATA_NUMBER)
     write_raw_data("start saving")
+    os.system("say 'start'")
 
 
 def show_statistics():
@@ -144,10 +145,13 @@ def update(client_data):
     global sources, x, saving, saving_num, statistics
     write_raw_data(client_data)
     client_data_list = client_data.split(',')
+    data_num = int(client_data_list[1])
     antenna_id = int(client_data_list[2])
     beacon_id = int(client_data_list[3])
     rssi = int(client_data_list[-1])
     sources[antenna_id][beacon_id].stream(dict(x=[x], y=[rssi]))
+    if data_num == conf.AUTO_START_NUMBER:
+        save_data()
     if saving:
         write_data(client_data)
         saving_num += 1
