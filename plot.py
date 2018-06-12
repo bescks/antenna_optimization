@@ -11,7 +11,7 @@ from bokeh.layouts import row, column
 from bokeh.models.widgets import Button, Div
 from bokeh.models import ColumnDataSource, Label
 from bokeh.models import HoverTool
-from file_writer import write_data, write_raw_data
+from data_writer import write_data, write_raw_data
 import multiprocessing as mp
 
 # this must only be modified from a Bokeh session callback

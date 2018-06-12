@@ -28,7 +28,6 @@ def socket_handler(id, ip):
             update_plot(client_data)
         except Exception as e:
             logger.error(str(e) + ': ' + client_data)
-
         # conn.sendall('sever have received your message'.encode())  # send feedback to client
     conn.close()
     logger.info(socket_logger_head + "antenna socket is closed")
@@ -37,7 +36,6 @@ def socket_handler(id, ip):
 ports = {}  # key: ip, value: port
 logger.info("start to set each antenna...")
 for id, prop in conf.ANTENNAS.items():
-
     threading.Thread(target=socket_handler, args=(id, prop['IP'])).start()
     while prop['IP'] not in ports:
         time.sleep(0.1)
@@ -52,4 +50,3 @@ for id, prop in conf.ANTENNAS.items():
         logger.info(logger_head + "antenna socket isn't started")
 
 logger.info("antennas setting are finished")
-
