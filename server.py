@@ -3,7 +3,7 @@ import subprocess
 import socket
 import threading
 import time
-from plot import update_plot
+from plot_realtime import update_plot
 from logger import logger
 
 exit = False

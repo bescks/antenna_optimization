@@ -1,5 +1,5 @@
 # csv name format: timestamp-pt-b1-b2-a1-a2-home-room-1m-1
-FILE_PATH = "2018-06-12/"
+FILE_PATH = "data/"
 EXPERIMENT_HEADER = {
     'category': "pt",
     'place': "office",  # office, home
