@@ -23,9 +23,14 @@ files = [f for f in listdir(path_head + path) if isfile(join(path_head + path, f
 figures = []
 files.sort()
 for file in files:
-    if file.startswith("rawData"):
+    if file not in ["data-20180611 14:26-pt-office-room11-1m-a2-b1--30dbm-1.csv",
+                    "data-20180611 14:33-pt-office-room11-1m-a2-b1--30dbm-2.csv",
+                    "data-20180611 14:39-pt-office-room11-1m-a2-b1--30dbm-3.csv"]:
         continue
-    output_file(path_head + path + "plot/" + file[:-4] + ".html")
+    # output_file(path_head + path + "plot/" + file[:-4] + ".html")
+    print(file)
+    output_file(path_head + path + "plot/" + "pt-office-room11-1m-a2-b1--30dbm" + ".html")
+
     with open(path_head + path + file) as f:
         reader = csv.reader(f)
         # next(reader) 返回文件下一行，并按照分隔符生成一个list， 第一次调用时读取第一行
@@ -72,4 +77,4 @@ for file in files:
     p2.xgrid.grid_line_color = None
     figures.append(p2)
 
-    show(column(figures))  # open a browser
+show(column(figures))  # open a browser
