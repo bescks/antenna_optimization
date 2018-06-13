@@ -1,3 +1,1 @@
-a = [-1, -2, -3, -4, -5, -6]
-a.sort(reverse=True)
-print(a)
+print(10 - 8 - 7 * 2)

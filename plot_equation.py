@@ -7,12 +7,13 @@ from os import listdir
 from os.path import isfile, join
 from bokeh.plotting import figure, show, output_file
 import conf
+import math
 
-filename_path = "data/tx_power/beacon5/"
-filename_head = "20180611-pt-office-room2.01-a2-b5-1m"
-filename_dbm = [4, 0, -4, -8, -12, -16, -20, '-30(40)']
+filename_path = "data_new/"
+filename_head = "a2-b5"
+filename_distance = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5]
 filename_order = [1, 2, 3]
-output_path = "data/tx_power/beacon5/plot_line_and_bar_chart/"
+output_path = "data_new/plot_formula2/"
 
 
 def plot_line_chart(x, y, title):
@@ -64,26 +65,44 @@ def plot_line(picture, x=None, y=None):
 
 
 # main plot program
-for dbm in filename_dbm:
-    output_file('%s%s-%sdbm.html' % (output_path, filename_head, dbm))
-    figures = []
+output_file('%s%s-4dbm.html' % (output_path, filename_head))
+x = filename_distance.copy()
+y_ideal = [4 - 40 - 20 * math.log10(distance) for distance in filename_distance]
+y_measured = []
+for distance in filename_distance:
+    medians = []
     for order in filename_order:
-        with open('%s%s-%sdbm-%s.csv' % (filename_path, filename_head, dbm, order)) as f:
+        with open('%s%s-%sm-4dbm-%s.csv' % (filename_path, filename_head, distance, order)) as f:
             reader = csv.reader(f)
             header_row = next(reader)
             rssi = []
             for row in reader:
-                assert len(row) == 7, "multiple lines in: %sdbm-%s" % (dbm, order)
+                assert len(row) == 7, "multiple lines in: %sm-%s" % (distance, order)
                 rssi.append(int(row[-1]))
             assert len(rssi) == conf.SAVED_DATA_NUMBER, "data size is %s, not %s" % (len(rssi), conf.SAVED_DATA_NUMBER)
-            x = np.arange(1, len(rssi) + 1, 1)
-            y = np.array(rssi, dtype=np.int16)
-            title = "%s-%sdbm-%s(size=%s, max=%s, min=%s, avg=%s, median=%s)" % \
-                    (filename_head, dbm, order, len(y), max(y), min(y), mean(y), median(y))
-            # add line chart
-            figures.append(plot_line_chart(x=x, y=y, title=title))
-            # add bar chart
-            unique_elements, counts_elements = np.unique(y, return_counts=True)
-            figures.append(plot_bar_chart(x=unique_elements, y=counts_elements, title=''))
-    # open a browser
-    show(column(figures))
+
+            rssi.sort()
+            rssi = np.array(rssi)
+            # percent = (abs(median(rssi)) - 39) * 0.01
+            # print(len(rssi), percent)
+            # rssi_top = rssi[:int(len(rssi) * percent)]
+            # medians.append(median(rssi_top))
+            medians.append(median(rssi))
+    y_measured.append(sum(medians) / len(medians))
+
+hover = HoverTool(
+    tooltips=[
+        ('x', '@x'),
+        ('y', '@y'),  # use @{ } for field names with spaces
+    ],
+    # display a tooltip whenever the cursor is vertically in line with a glyph
+    mode='vline'
+)
+tools = "pan,wheel_zoom,box_zoom,reset,save,box_select,crosshair,zoom_in,zoom_out"
+p = figure(title=filename_head, width=1000, height=300, tools=[hover, tools], )
+p.line(x, y_ideal, line_width=2, line_color='green')
+p.circle(x, y_ideal)
+p.line(x, y_measured, line_width=2, line_color='blue')
+p.circle(x, y_measured)
+
+show(p)

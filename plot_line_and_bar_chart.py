@@ -7,11 +7,11 @@ from os import listdir
 from os.path import isfile, join
 from bokeh.plotting import figure, show, output_file
 
-filename_path = "data/tx_power/beacon1/"
-filename_head = "20180611-pt-office-room2.11-a2-b1-1m"
+filename_path = "data/tx_power/beacon3/"
+filename_head = "20180612-pt-office-room2.01-a2-b3-1m"
 filename_dbm = [4, 0, -4, -8, -12, -16, -20, -30]
 filename_order = [1, 2, 3]
-output_path = "data/tx_power/beacon5/plot_line_and_bar_chart/"
+output_path = "data/tx_power/beacon3/plot_line_and_bar_chart/"
 
 
 def plot_line_chart(x, y, title):
