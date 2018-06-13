@@ -1,19 +1,16 @@
 import csv
 from numpy import median, mean
-from bokeh.layouts import column
 from bokeh.models import HoverTool, Span
 import numpy as np
-from os import listdir
-from os.path import isfile, join
 from bokeh.plotting import figure, show, output_file
-import conf
 import math
 
-filename_path = "data_new/"
-filename_head = "a2-b5"
-filename_distance = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5]
-filename_order = [1, 2, 3]
-output_path = "data_new/plot_formula2/"
+file_path = "data/neat/beacon5/data"
+file_head = "a2-b5"
+file_tx = 4
+file_distance = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5]
+file_order = [1, 2, 3]
+output_path = "data/neat/beacon5/plot_equation"
 
 
 def plot_line_chart(x, y, title):
@@ -64,31 +61,33 @@ def plot_line(picture, x=None, y=None):
     picture.renderers.extend(lines)
 
 
-# main plot program
-output_file('%s%s-4dbm.html' % (output_path, filename_head))
-x = filename_distance.copy()
-y_ideal = [4 - 40 - 20 * math.log10(distance) for distance in filename_distance]
-y_measured = []
-for distance in filename_distance:
+output_file('%s/%s-%sdbm-%sm.html' % (output_path, file_head, file_tx, file_distance))
+x_ideal = [i * 0.1 for i in range(1, 101)]
+y_ideal = [file_tx - 40 - 20 * math.log10(i) for i in x_ideal]
+x_measured = file_distance
+y_measured_avg_medians_top = []
+y_measured_avg_medians = []
+y_measured_avg_averages = []
+for distance in x_measured:
     medians = []
-    for order in filename_order:
-        with open('%s%s-%sm-4dbm-%s.csv' % (filename_path, filename_head, distance, order)) as f:
+    medians_top = []
+    averages = []
+    for order in file_order:
+        with open('%s/%s-%sdbm-%sm-%s.csv' % (file_path, file_head, file_tx, distance, order)) as f:
             reader = csv.reader(f)
             header_row = next(reader)
             rssi = []
             for row in reader:
-                assert len(row) == 7, "multiple lines in: %sm-%s" % (distance, order)
                 rssi.append(int(row[-1]))
-            assert len(rssi) == conf.SAVED_DATA_NUMBER, "data size is %s, not %s" % (len(rssi), conf.SAVED_DATA_NUMBER)
-
-            rssi.sort()
+            rssi.sort(reverse=True)
             rssi = np.array(rssi)
-            # percent = (abs(median(rssi)) - 39) * 0.01
-            # print(len(rssi), percent)
-            # rssi_top = rssi[:int(len(rssi) * percent)]
-            # medians.append(median(rssi_top))
+            top_numbers = int((abs(median(rssi)) - 39) * 0.01 * len(rssi))
+            medians_top.append(median(rssi[:top_numbers]))
             medians.append(median(rssi))
-    y_measured.append(sum(medians) / len(medians))
+            averages.append(mean(rssi))
+    y_measured_avg_medians_top.append(mean(medians_top))
+    y_measured_avg_medians.append(mean(medians))
+    y_measured_avg_averages.append(mean(averages))
 
 hover = HoverTool(
     tooltips=[
@@ -99,10 +98,15 @@ hover = HoverTool(
     mode='vline'
 )
 tools = "pan,wheel_zoom,box_zoom,reset,save,box_select,crosshair,zoom_in,zoom_out"
-p = figure(title=filename_head, width=1000, height=300, tools=[hover, tools], )
-p.line(x, y_ideal, line_width=2, line_color='green')
-p.circle(x, y_ideal)
-p.line(x, y_measured, line_width=2, line_color='blue')
-p.circle(x, y_measured)
+p = figure(title='%s-%dbm' % (file_head, file_tx), width=1000, height=300, tools=[hover, tools], )
+p.line(x_ideal, y_ideal, line_width=2, line_color='green')
+p.circle(x_measured, [file_tx - 40 - 20 * math.log10(i) for i in x_measured])
+p.line(x_measured, y_measured_avg_medians, line_width=2, line_color='blue')
+p.circle(x_measured, y_measured_avg_medians)
+p.line(x_measured, y_measured_avg_averages, line_width=2, line_color='red')
+p.circle(x_measured, y_measured_avg_averages)
+print(y_measured_avg_medians_top)
+p.line(x_measured, y_measured_avg_medians_top, line_width=2, line_color='blue')
+p.circle(x_measured, y_measured_avg_medians_top)
 
 show(p)
