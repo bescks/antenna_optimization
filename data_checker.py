@@ -3,11 +3,14 @@ from os import listdir
 from os.path import isfile, join
 
 path = 'data'
+exclude = ['old']
 
 
-def get_all_files(path):
+def get_all_files(path=path, exclude=[]):
     files = []
     for file in listdir(path):
+        if file in exclude:
+            continue
         if isfile(join(path, file)):
             files.append(join(path, file))
         else:
@@ -15,15 +18,24 @@ def get_all_files(path):
     return files
 
 
-for file in get_all_files(path):
+all_files = sorted(get_all_files(path, exclude))
+for file in all_files:
     if file.endswith('.csv'):
-        with open(file)  as f:
+        with open(file) as f:
             reader = csv.reader(f)
             header = next(reader)
             row_num = 1
             start_saving = 0
-            errors = {"unformed header":[],"empty line": [], "multiple lines": [], "missing column": [], "strange rssi": [],
-                      "strange saved data": [], "unknown strange line": []}
+            errors = {
+                "strange header": [],
+                "empty line": [],
+                "multiple lines": [],
+                "missing column": [],
+                "strange rssi": [],
+                "strange saved data": [],
+                "unknown strange line": []}
+            if len(header) != 8:
+                errors['strange header'].append(len(header))
             for row in reader:
                 row_num += 1
                 if len(row) == 0:
@@ -32,7 +44,7 @@ for file in get_all_files(path):
                     if row[0] == "start saving":
                         start_saving = row_num
                     elif row[0] == "end saving":
-                        saved_data = row_num - start_saving
+                        saved_data = row_num - start_saving - 1
                         if saved_data != 500:
                             errors["strange saved data"].append(saved_data)
                     else:
@@ -42,9 +54,12 @@ for file in get_all_files(path):
                 elif len(row) > 7:
                     errors["multiple lines"].append(row_num)
                 else:
-                    if int(row[-1]) < -100 or int(row[-1]) > 0:
+                    if int(row[-1]) < -105 or int(row[-1]) > 0:
                         errors["strange rssi"].append(row_num)
             msg = ''
+            # if file is not raw data, row_num should be 501
+            if start_saving == 0 and row_num != 501:
+                errors['strange saved data'].append(row_num)
             for key, value in errors.items():
                 if len(value) == 0:
                     continue

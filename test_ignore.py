@@ -1,1 +1,6 @@
-print(10 - 8 - 7 * 2)
+a = 2
+for i in range(5):
+    print(i)
+    if i == 3:
+
+        break
