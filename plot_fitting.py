@@ -10,7 +10,7 @@ file_head = "a2-b5"
 file_tx = 4
 file_distance = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5]
 file_order = [1, 2, 3]
-output_path = "data/neat/beacon5/plot_equation"
+output_path = "data/neat/beacon5/plot_fitting"
 
 
 def plot_line_chart(x, y, title):
@@ -64,14 +64,11 @@ def plot_line(picture, x=None, y=None):
 output_file('%s/%s-%sdbm-%sm.html' % (output_path, file_head, file_tx, file_distance))
 x_ideal = [i * 0.1 for i in range(1, 101)]
 y_ideal = [file_tx - 40 - 20 * math.log10(i) for i in x_ideal]
-x_measured = file_distance
-y_measured_avg_medians_top = []
-y_measured_avg_medians = []
-y_measured_avg_averages = []
-for distance in x_measured:
-    medians = []
-    medians_top = []
-    averages = []
+x = []
+y_median = []
+y_average = []
+
+for distance in file_distance:
     for order in file_order:
         with open('%s/%s-%sdbm-%sm-%s.csv' % (file_path, file_head, file_tx, distance, order)) as f:
             reader = csv.reader(f)
@@ -81,13 +78,9 @@ for distance in x_measured:
                 rssi.append(int(row[-1]))
             rssi.sort(reverse=True)
             rssi = np.array(rssi)
-            top_numbers = int((abs(median(rssi)) - 39) * 0.01 * len(rssi))
-            medians_top.append(median(rssi[:top_numbers]))
-            medians.append(median(rssi))
-            averages.append(mean(rssi))
-    y_measured_avg_medians_top.append(mean(medians_top))
-    y_measured_avg_medians.append(mean(medians))
-    y_measured_avg_averages.append(mean(averages))
+            x.append(distance)
+            y_median.append(median(rssi))
+            y_average.append(mean(rssi))
 
 hover = HoverTool(
     tooltips=[
@@ -100,13 +93,7 @@ hover = HoverTool(
 tools = "pan,wheel_zoom,box_zoom,reset,save,box_select,crosshair,zoom_in,zoom_out"
 p = figure(title='%s-%dbm' % (file_head, file_tx), width=1000, height=300, tools=[hover, tools], )
 p.line(x_ideal, y_ideal, line_width=2, line_color='green')
-p.circle(x_measured, [file_tx - 40 - 20 * math.log10(i) for i in x_measured])
-p.line(x_measured, y_measured_avg_medians, line_width=2, line_color='blue')
-p.circle(x_measured, y_measured_avg_medians)
-p.line(x_measured, y_measured_avg_averages, line_width=2, line_color='red')
-p.circle(x_measured, y_measured_avg_averages)
-print(y_measured_avg_medians_top)
-p.line(x_measured, y_measured_avg_medians_top, line_width=2, line_color='black')
-p.circle(x_measured, y_measured_avg_medians_top)
+print(x,y_average)
+p.circle(x, y_average)
 
 show(p)

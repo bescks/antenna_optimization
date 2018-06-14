@@ -6,17 +6,15 @@ time_data = datetime.datetime.now().strftime("%Y%m%d")
 # time_raw_data = datetime.datetime.now().strftime("%Y%m%d %H:%M")
 
 filename = ''
-for key, value in conf.EXPERIMENT_HEADER.items():
-    filename = filename + "-" + value
 for id in conf.ANTENNAS:
-    filename = filename + "-a" + str(id)
+    filename = filename + "a%s-" % id
 for id in conf.BEACONS:
-    filename = filename + "-b" + str(id)
+    filename = filename + "b%s-" % id
 for key, value in conf.EXPERIMENT_SETTING.items():
-    filename = filename + "-" + value
-
-file_raw_data = "%sraw/raw%s%s.csv" % (conf.FILE_PATH, time_data, filename)
-file_data = "%s%s%s.csv" % (conf.FILE_PATH, time_data, filename)
+    filename = filename + "%s-" % value
+filename = filename[:-1]
+file_raw_data = "%s/raw/raw-%s.csv" % (conf.FILE_PATH, filename)
+file_data = "%s/%s.csv" % (conf.FILE_PATH, filename)
 
 
 def write_raw_data(msg):
@@ -38,6 +36,6 @@ try:
 except Exception as e:
     pass
 
-data_header = "timestamp,dataNum,antennaID,beaconMac,beaconUUID,beaconRSSI"
+data_header = "timestamp,dataNum,antennaID,beaconID,beaconMac,beaconUUID,beaconRSSI,%s" % conf.CSV_COMMENT
 write_raw_data(data_header)
 write_data(data_header)

@@ -1,15 +1,12 @@
 # csv name format: timestamp-pt-b1-b2-a1-a2-home-room-1m-1
-FILE_PATH = "data_new/"
-EXPERIMENT_HEADER = {
-    'category': "pt",
-    'place': "office",  # office, home
-    'location': "room2.11",  # square, corridor,room
-}
+FILE_PATH = "data/newcome"
+
 EXPERIMENT_SETTING = {
-    'distance': "5m",
     'power': '4dbm',
+    'distance': "6.5m",
     'order': '3'
 }
+CSV_COMMENT = "(office corridor path_loss_0.6m)",  # square, corridor,room
 
 # available tags
 SCAN_ALL_TAGS = False
@@ -35,7 +32,7 @@ ANTENNAS = {
 
 # server IP
 # SERVER = '192.168.1.100'  # home: Huawei-WIFI
-SERVER = '192.168.171.101'  # office: ATG-Group
+SERVER = '192.168.171.100'  # office: ATG-Group
 
 # beacon frequency, unit: second
 BEACON_FREQUENCY = 0.2
