@@ -5,7 +5,6 @@ from bokeh.plotting import curdoc, figure
 import os
 from tornado import gen
 import conf
-import queue
 import numpy as np
 from bokeh.palettes import Category10
 from bokeh.layouts import row, column

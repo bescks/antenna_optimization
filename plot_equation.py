@@ -15,8 +15,6 @@ file_distance_path_loss = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6.5]
 file_order = [1, 2, 3]
 output_path = "."
 
-colors = Category10[10]
-
 
 def plot_line_chart(x, y, title):
     hover = HoverTool(

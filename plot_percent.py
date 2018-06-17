@@ -119,3 +119,4 @@ for category in file_category:
 
                             # open a browser
                         show(column(figures))
+
