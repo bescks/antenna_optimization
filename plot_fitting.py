@@ -5,12 +5,12 @@ import numpy as np
 from bokeh.plotting import figure, show, output_file
 import math
 
-file_path = "data/neat/beacon5/data"
+file_path = "b5/data/distance"
 file_head = "a2-b5"
 file_tx = 4
-file_distance = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5]
+file_distance = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 7, 10]
 file_order = [1, 2, 3]
-output_path = "data/neat/beacon5/plot_fitting"
+output_path = ""
 
 
 def plot_line_chart(x, y, title):
@@ -61,7 +61,7 @@ def plot_line(picture, x=None, y=None):
     picture.renderers.extend(lines)
 
 
-output_file('%s/%s-%sdbm-%sm.html' % (output_path, file_head, file_tx, file_distance))
+output_file('%s-%sdbm-%sm.html' % (file_head, file_tx, file_distance))
 x_ideal = [i * 0.1 for i in range(1, 101)]
 y_ideal = [file_tx - 40 - 20 * math.log10(i) for i in x_ideal]
 x = []
@@ -93,7 +93,7 @@ hover = HoverTool(
 tools = "pan,wheel_zoom,box_zoom,reset,save,box_select,crosshair,zoom_in,zoom_out"
 p = figure(title='%s-%dbm' % (file_head, file_tx), width=1000, height=300, tools=[hover, tools], )
 p.line(x_ideal, y_ideal, line_width=2, line_color='green')
-print(x,y_average)
+print(x, y_average)
 p.circle(x, y_average)
 
 show(p)

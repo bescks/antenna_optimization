@@ -4,15 +4,18 @@ from bokeh.models import HoverTool, Span
 import numpy as np
 from bokeh.plotting import figure, show, output_file
 import math
+from bokeh.palettes import Category10
 
-file_path = "b1/data/distance"
+file_path = "b5/data/distance"
 file_antenna = [2]
-file_beacon = [1]
+file_beacon = [5]
 file_tx = 4
 file_distance = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 7, 10]
 file_distance_path_loss = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6.5]
 file_order = [1, 2, 3]
-output_path = "b1/plot_equation"
+output_path = "."
+
+colors = Category10[10]
 
 
 def plot_line_chart(x, y, title):
@@ -77,8 +80,8 @@ for antenna in file_antenna:
     for beacon in file_beacon:
         output_file('%s/a%s-b%s-%sdbm-%sm.html' % (output_path, antenna, beacon, file_tx, file_distance))
         for distance in x_measured:
-            medians = []
             medians_top = []
+            medians = []
             averages = []
             for order in file_order:
                 with open('%s/a%s-b%s-%sdbm-%sm-%s.csv' % (file_path, antenna, beacon, file_tx, distance, order)) as f:
@@ -96,70 +99,54 @@ for antenna in file_antenna:
             y_measured_avg_medians_top.append(mean(medians_top))
             y_measured_avg_medians.append(mean(medians))
             y_measured_avg_averages.append(mean(averages))
-        # for distance in x_measured_path_loss:
-        #     medians = []
-        #     averages = []
-        #     for order in file_order:
-        #         with open('%s_path_loss/a%s-b%s-path_loss-%sdbm-%sm-%s.csv' % (
-        #                 file_path, antenna, beacon, file_tx, distance, order)) as f:
-        #             reader = csv.reader(f)
-        #             header_row = next(reader)
-        #             rssi = []
-        #             for row in reader:
-        #                 rssi.append(int(row[-1]))
-        #             rssi.sort(reverse=True)
-        #             rssi = np.array(rssi)
-        #             medians.append(median(rssi))
-        #             averages.append(mean(rssi))
-        #     y_measured_avg_medians_path_loss.append(mean(medians))
-        #     y_measured_avg_averages_path_loss.append(mean(averages))
+        for distance in x_measured_path_loss:
+            medians = []
+            averages = []
+            for order in file_order:
+                with open('%s_path_loss/a%s-b%s-path_loss-%sdbm-%sm-%s.csv' % (
+                        file_path, antenna, beacon, file_tx, distance, order)) as f:
+                    reader = csv.reader(f)
+                    header_row = next(reader)
+                    rssi = []
+                    for row in reader:
+                        rssi.append(int(row[-1]))
+                    rssi.sort(reverse=True)
+                    rssi = np.array(rssi)
+                    medians.append(median(rssi))
+                    averages.append(mean(rssi))
+            y_measured_avg_medians_path_loss.append(mean(medians))
+            y_measured_avg_averages_path_loss.append(mean(averages))
 
         hover = HoverTool(
             tooltips=[
                 ('x', '@x'),
-                ('y', '@y'),  # use @{ } for field names with spaces
+                ('y', '@y'),
             ],
-            # display a tooltip whenever the cursor is vertically in line with a glyph
             mode='vline'
         )
         tools = "pan,wheel_zoom,box_zoom,reset,save,box_select,crosshair,zoom_in,zoom_out"
         p = figure(title='a%s-b%s-%dbm' % (antenna, beacon, file_tx), width=1200, height=600, tools=[hover, tools],
-                   x_axis_label='meter', y_axis_label='rssi')
-        p.line(x_ideal, y_ideal, line_width=2, line_color='green',legend='ideal curve')
-        p.circle(x_measured, [file_tx - 40 - 20 * math.log10(i) for i in x_measured],legend='ideal curve')
-        # p.line(x_measured, y_measured_avg_medians_top, line_width=2, line_color='black', legend='median of (-median-39)% of data')
-        # p.circle(x_measured, y_measured_avg_medians_top,legend='median of (-median-39)% of data')
-        p.line(x_measured, y_measured_avg_medians, line_width=2, line_color='blue',legend='median')
-        p.circle(x_measured, y_measured_avg_medians,legend='median')
-        p.line(x_measured, y_measured_avg_averages, line_width=2, line_color='red',legend='average')
-        p.circle(x_measured, y_measured_avg_averages,legend='average')
-        x_measured_path_loss = [i + 0.6 for i in x_measured_path_loss]
-        # p.line(x_measured_path_loss, y_measured_avg_medians_path_loss, line_width=2, line_color='blue',legend = 'median: with path loss')
-        # p.circle(x_measured_path_loss, y_measured_avg_medians_path_loss,legend = 'median: with path loss')
-        # p.line(x_measured_path_loss, y_measured_avg_averages_path_loss, line_width=2, line_color='red',legend = 'average: with path loss')
-        # p.circle(x_measured_path_loss, y_measured_avg_averages_path_loss,legend = 'average: with path loss')
+                   x_axis_label='distance(meter)', y_axis_label='rssi')
+        p.line(x_ideal, y_ideal, line_width=2, line_color=colors.pop(0), legend='ideal curve')
+        p.circle(x_measured, [file_tx - 40 - 20 * math.log10(i) for i in x_measured], fill_color="white",
+                 legend='ideal curve')
+        p.line(x_measured, y_measured_avg_medians_top, line_width=2, line_color=colors.pop(0),
+               legend='median((-median-39)% of data)')
+        p.circle(x_measured, y_measured_avg_medians_top, fill_color="white", legend='median((-median-39)% of data)')
+        p.line(x_measured, y_measured_avg_medians, line_width=2, line_color=colors.pop(0), legend='median')
+        p.circle(x_measured, y_measured_avg_medians, fill_color="white", legend='median')
+        p.line(x_measured, y_measured_avg_averages, line_width=2, line_color=colors.pop(0), legend='average')
+        p.circle(x_measured, y_measured_avg_averages, fill_color="white", legend='average')
+
+        p.line([i + 0.6 for i in x_measured_path_loss], y_measured_avg_medians_path_loss, line_width=2,
+               line_color=colors.pop(0), legend='median - with path loss')
+        p.circle([i + 0.6 for i in x_measured_path_loss], y_measured_avg_medians_path_loss, fill_color="white",
+                 legend='median - with path loss')
+        p.line([i + 0.6 for i in x_measured_path_loss], y_measured_avg_averages_path_loss, line_width=2,
+               line_color=colors.pop(0), legend='average - with path loss')
+        p.circle([i + 0.6 for i in x_measured_path_loss], y_measured_avg_averages_path_loss, fill_color="white",
+                 legend='average - with path loss')
+
         p.legend.location = "top_left"
         p.legend.click_policy = "hide"
         show(p)
-# for i in range(1, 4):
-#     median = []
-#     average = []
-#     with open('b5/data/distance_path_loss/a2-b5-path_loss-4dbm-3m-%s.csv' % (i)) as f:
-#         reader = csv.reader(f)
-#         header_row = next(reader)
-#         rssi = []
-#         for row in reader:
-#             rssi.append(int(row[-1]))
-#         print(mean(rssi))
-#
-# for i in range(1, 4):
-#     median = []
-#     average = []
-#     with open('b5/data/distance_path_loss/a2-b5-path_loss-4dbm-4m-%s.csv' % (i)) as f:
-#         reader = csv.reader(f)
-#         header_row = next(reader)
-#         rssi = []
-#         for row in reader:
-#             rssi.append(int(row[-1]))
-#         print(mean(rssi))
-#

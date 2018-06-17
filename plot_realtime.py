@@ -5,6 +5,7 @@ from bokeh.plotting import curdoc, figure
 import os
 from tornado import gen
 import conf
+import queue
 import numpy as np
 from bokeh.palettes import Category10
 from bokeh.layouts import row, column
@@ -18,16 +19,13 @@ import multiprocessing as mp
 # source are used to keep all data
 
 sources = {}  # {beaconsID:{antennaID: source}}
-colors = {"all": Category10[10]}
-i = 0
+colors = Category10[10]
+
 for antenna_id in conf.ANTENNAS:
     sources[antenna_id] = {}
-    colors[antenna_id] = {}
     for beacon_id in conf.BEACONS:
         sources[antenna_id][beacon_id] = ColumnDataSource(
             data=dict(x=[], y=[]))  # x, y indicate the first set of data
-        colors[antenna_id][beacon_id] = colors["all"][i]
-        i += 1
 
 # Save curdoc() to make sure all threads see the same document
 doc = curdoc()
@@ -60,7 +58,7 @@ for antenna_id in conf.ANTENNAS:
             y='y',
             source=sources[antenna_id][beacon_id],
             legend="Antenna %s,Beacon %s" % (antenna_id, beacon_id),
-            line_color=colors[antenna_id][beacon_id],
+            line_color=colors.pop(0),
             line_width=1.5)
         plot_line.circle(
             x='x',

@@ -2,11 +2,11 @@ import csv
 from os import listdir
 from os.path import isfile, join
 
-path = 'data'
-exclude = ['old']
+path = '.'
+exclude = ('old', 'venv')
 
 
-def get_all_files(path=path, exclude=[]):
+def get_all_files(path, exclude=()):
     files = []
     for file in listdir(path):
         if file in exclude:
